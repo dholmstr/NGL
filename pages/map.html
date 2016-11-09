@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 100%;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="lib/class_manager.js"></script>
+    <script src="lib/digitransit_manager.js"></script>
+    <script src="lib/map_manager.js"></script>
+</head>
+<body>
+<div id="map" style="width:400px; height: 400px; float:left"></div>
+<div id="directions" style="width:400px; height: 400px; float:left"></div>
+<script>
+
+    var mapManager = new MapManager({
+        'mapContainerId' : 'map',
+        'directionsContainerId': 'directions',
+        'apiKey' : 'AIzaSyAq4CZxYBwQ3Mf3RDJGH6CYUbBU1nonVpI'
+    }, function() {
+
+        mapManager.renderRoute('Gamla landsvägen 6, 02650 Esbo', 'Metropolia Bulavardi Helsinki');
+
+        var digitransitManager = new DigitransitManager();
+        digitransitManager.getPlans();
+
+    });
+
+
+</script>
+</body>
+</html>
