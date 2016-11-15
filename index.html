@@ -12,6 +12,10 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 	<script src="jquery.geocomplete.js"></script>
 	<script src="http://maps.googleapis.com/maps/api/js?sensor=false&amp;libraries=places"	type="text/javascript"></script>
+	
+	<script src="autoCompleteTextBox.js"></script>
+	<script src="jquery-3.1.1.min.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 
 	<script src="map.js"></script>
 	<link href='http://fonts.googleapis.com/css?family=Satisfy' rel='stylesheet' type='text/css'>
@@ -38,7 +42,7 @@
 	<div data-role="content" id="main_content">
 		<div data-role="main" class="ui-content" >
 			<p><h3>Start Point</h3></p>
-			<input id="search-start" type="search" size="35" oninput='$("#search-start").geocomplete()' placeholder="Please enter Stop here" autocomplete="on">
+			<input id="search-start" type="search" size="35" oninput='getAddress(document.getElementById("search-start").value)' placeholder="Please enter Stop here" autocomplete="on">
 			<p id="demo"></p>
 			<button onclick="getLocation()">Your Current Position</button>
 			<div id="mapholder"></div>
