@@ -1,0 +1,12 @@
+.itineraries-item span{
+    display: inline-block;
+    padding-right: 5px;
+}
+.itineraries-item .duration::before{
+    content: 'Duration: ';
+    display: inline-block;
+}
+.itineraries-item .walkDistance::before{
+    content: 'Walking Distance: ';
+    display: inline-block;
+}

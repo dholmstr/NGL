@@ -3,6 +3,9 @@ Lava.ClassManager.registerRootNamespace('global', window);
 Lava.ClassManager.define(
     'global.DigitransitManager',
     {
+        url: 'https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql',
+
+        // TODO: Some meaningful default from and to
         planRequest: {
             from: {
                 lat:60.199196699999995,
@@ -16,33 +19,83 @@ Lava.ClassManager.define(
             modes : '\"BUS,TRAM,RAIL,SUBWAY,FERRY,WALK\"'
         },
 
-        legsData: [
-            'startTime',
-            'endTime',
-            'mode',
-            'duration',
-            'realTime',
-            'distance',
-            'transitLeg'
-        ],
+        itinerariesData: {
+            'itineraries':[
+                'walkDistance',
+                'duration',
+                [{
+                    'legs': [
+                        'mode',
+                        'startTime',
+                        'endTime',
+                        [{
+                            'from': [
+                                'lat',
+                                'lon',
+                                'name',
+                                [{
+                                    'stop': [
+                                        'code',
+                                        'name'
+                                    ]
+                                }]
+                            ]
+                        }],
+                        [{
+                            'to': [
+                                'lat',
+                                'lon',
+                                'name',
+                                [{
+                                    'stop': [
+                                        'code',
+                                        'name'
+                                    ]
+                                }]
+                            ]
+                        }],
+                        'mode',
+                        [{
+                            'agency': [
+                                'id'
+                            ]
+                        }],
+                        'duration',
+                        'realTime',
+                        'distance',
+                        'transitLeg'
+                    ]
+                }]
+            ]
+        },
 
-        url: 'https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql',
+        itinerariesDataFormatted: null,
 
         init: function(config){
-            // TODO: Implementation or remove
-            // TODO: Test that jQuery initialized and load if not or re-write without jQuery
+            // Convert itinerariesData to Digitransit format
+            this.itinerariesDataFormatted = JSON.stringify(this.itinerariesData)
+                .replace(/\[{|}]|["']/g, '')
+                .replace(/\[/g, '{')
+                .replace(/]/g, '}')
+                .replace(/[:,]/g, ' ');
         },
 
-        getPlans: function(from, to, callback){
-            var result = '';
-            result = this._convert(this.planRequest, '', this._getLastKey(this.planRequest));
-            console.log('plan(' + result + ')');
+        getPlans: function(from, to, callback, callbackOnFail){
+            if(typeof from === 'object' && typeof from.lat === 'number' && typeof from.lon === 'number'){
+                this.planRequest.from = from;
+            }
+            if(typeof to === 'object' && typeof to.lat === 'number' && typeof to.lon === 'number'){
+                this.planRequest.to = to;
+            }
 
-            var query = "{" + 'plan(' + result + ')' + " {itineraries {legs {" + this.legsData.join(' ') + "}}}}";
-            this._request({"query": query});
+            var params  = this._convert(this.planRequest, '', this._getLastKey(this.planRequest));
+
+            this._request({
+                "query": "{" + 'plan(' + params + ') ' + this.itinerariesDataFormatted + "}"
+            }, callback);
         },
 
-        _request: function(data, callback){
+        _request: function(data, callback, callbackOnFail){
             var self = this;
             $.ajax({
                 'url': self.url,
@@ -50,10 +103,13 @@ Lava.ClassManager.define(
                 'contentType': "application/json",
                 'data': JSON.stringify(data)
             }).done(function(result){
-                console.log(result);
+                if(typeof callback === 'function'){
+                    callback(result, callbackOnFail);
+                }
             }).fail(function (jqXHR, textStatus){
-                console.log(jqXHR);
-                console.log("Request failed: jqXHR: " + jqXHR + " text:"+ textStatus);
+                if(callbackOnFail && typeof callbackOnFail === 'function'){
+                    callbackOnFail(textStatus);
+                }
             });
         },
 

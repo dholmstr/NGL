@@ -22,6 +22,7 @@
 <body>
 <div id="map" style="width:400px; height: 400px; float:left"></div>
 <div id="directions" style="width:400px; height: 400px; float:left"></div>
+<div id="itineraries" style="width:400px; height: 400px; float:left"></div>
 <script>
 
     var mapManager = new MapManager({
@@ -33,8 +34,57 @@
         mapManager.renderRoute('Gamla landsvägen 6, 02650 Esbo', 'Metropolia Bulavardi Helsinki');
 
         var digitransitManager = new DigitransitManager();
-        digitransitManager.getPlans();
 
+        var from = {
+            lat:60.199196699999995,
+            lon:24.9397302
+        };
+
+        var to = {
+            lat:60.168438,
+            lon:24.929283
+        };
+
+        digitransitManager.getPlans(from, to, function(result){
+            console.log('Result in callback');
+            console.log(result);
+            if(typeof result === 'object' && typeof result.data === 'object'
+                    && typeof result.data.plan === 'object'
+                    && typeof result.data.plan.itineraries === 'object'){
+                console.log('result is ok');
+                result = result.data.plan.itineraries;
+                if(result.length > 0){
+                    console.log('there are plans');
+
+                    var list = $("<ul class='itineraries-list'></ul>");
+                    $('#itineraries').html('').append(list);
+
+                    $.each(result, function(i, v){
+                        var item = $("<li class='itineraries-item'></li>");
+                        console.log(item);
+                        if(v.duration){
+                            // TODO: _secondsToHuman
+                            $("<span class='duration'>" + v.duration + "</span>").appendTo(item);
+                        }
+                        if(v.walkDistance){
+                            // TODO: walkDistanceToHuman
+                            $("<span class='walkDistance'>" + v.walkDistance + "</span>").appendTo(item);
+                        }
+
+                        console.log(result);
+                        $(list).append(item);
+                    });
+                } else {
+                    console.log('no plans');
+                    // TODO: Show appropriate message
+                }
+
+            } else {
+                console.log('error processing plans');
+                console.log(result);
+                // TODO: Show appropriate message to the user
+            }
+        }, true);
     });
 
 

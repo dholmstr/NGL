@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Never Get Lost</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="lib/class_manager.js"></script>
+    <script src="lib/digitransit_manager.js"></script>
+    <script src="lib/map_manager.js"></script>
+    <script src="lib/manager.js"></script>
+</head>
+<body>
+<header>
+    <div><h1>Never Get Lost</h1></div>
+    <div class="control-panel">
+        <span>Voice input here</span>
+    </div>
+</header>
+<main>
+    <section id="step-from">
+        <label for="input-from">From</label>
+        <input id="input-from" name="from" type="search" size="35" placeholder="From" required>
+    </section>
+    <section id="step-to">
+        <label for="input-to">From</label>
+        <input id="input-to" name="to" type="search" size="35" placeholder="To" required>
+    </section>
+    <section id="step-routes">
+        <span>Routes here</span>
+    </section>
+    <section id="step-map">
+        <span>Map here</span>
+    </section>
+</main>
+<footer>
+    <div class="controls-panel">
+        <button id="button-back">Back</button>
+        <button id="button-next">Next</button>
+        <button id="button-go">Go</button>
+        <button id="button-reset">Stop</button>
+    </div>
+    <div class="info-panel">
+        <span>Show directions / instructions here</span>
+    </div>
+</footer>
+<script>
+    var manager = new Manager();
+</script>
+</body>
+</html>
