@@ -80,7 +80,7 @@ Lava.ClassManager.define(
                 .replace(/[:,]/g, ' ');
         },
 
-        getPlans: function(from, to, callback, callbackOnFail){
+        getPlans: function(from, to, callback, callbackOnFail, handler){
             if(typeof from === 'object' && typeof from.lat === 'number' && typeof from.lon === 'number'){
                 this.planRequest.from = from;
             }
@@ -92,10 +92,10 @@ Lava.ClassManager.define(
 
             this._request({
                 "query": "{" + 'plan(' + params + ') ' + this.itinerariesDataFormatted + "}"
-            }, callback);
+            }, callback, callbackOnFail, handler);
         },
 
-        _request: function(data, callback, callbackOnFail){
+        _request: function(data, callback, callbackOnFail, handler){
             var self = this;
             $.ajax({
                 'url': self.url,
@@ -104,7 +104,7 @@ Lava.ClassManager.define(
                 'data': JSON.stringify(data)
             }).done(function(result){
                 if(typeof callback === 'function'){
-                    callback(result, callbackOnFail);
+                    callback(result, callbackOnFail, handler);
                 }
             }).fail(function (jqXHR, textStatus){
                 if(callbackOnFail && typeof callbackOnFail === 'function'){

@@ -40,7 +40,9 @@ Lava.ClassManager.define(
 
             route: {
                 from : {},
-                to: {}
+                to: {},
+                allRoutes: {},
+                currentRoute: {}
             },
 
             'currentStep': 1
@@ -92,6 +94,7 @@ Lava.ClassManager.define(
         route: null,
 
         digitransitManager: null,
+        mapManager: null,
 
         init: function(){
             this._initDefaults();
@@ -102,6 +105,13 @@ Lava.ClassManager.define(
             }
 
             this.digitransitManager = new DigitransitManager();
+
+            // TODO: Move this to defaults
+            this.mapManager = new MapManager({
+                'mapContainerId' : 'map-container',
+                'directionsContainerId': 'map-directions-container',
+                'apiKey' : 'AIzaSyAq4CZxYBwQ3Mf3RDJGH6CYUbBU1nonVpI'
+            });
 
             this.toStep(this.currentStep);
         },
@@ -189,12 +199,12 @@ Lava.ClassManager.define(
 
         _persist: function(key, value){
             // TODO: Implementation. Store data in browser local storage
-            //console.log('Persist called for key: ' + key + " value: " + value);
+            console.log('Persist called for key: ' + key + " value: " + value);
         },
 
         _getPersisted: function(key){
             // TODO: Implementation
-            //console.log('_getPersisted called for key: ' + key + " value: " + value);
+            console.log('_getPersisted called for key: ' + key);
         },
 
         toStep: function(step){
@@ -242,20 +252,60 @@ Lava.ClassManager.define(
             // Clear container html
             $(this.steps[this.currentStep].container).html('');
 
+            var route = this._getPersisted('route');
+            if(typeof routes === 'object' && typeof routes.allRoutes === 'object'){
+                return this.showPlans(routes.allRoutes, this.error, this);
+            }
+
             // Load Digitransit itineraries
             this.digitransitManager.getPlans(
                 this.route.from,
                 this.route.to,
                 this.showPlans, // callback on success
-                this.error      // callback on failure
+                this.error,     // callback on failure
+                this            // referense to the current object
             );
         },
 
-        // We get to this function by callback from digitransit, so this method 'does not know'
-        // its parent object and we can use only 'static' methods here
-        showPlans: function(data, callbackOnFail){
+        setItinerary: function(index){
+            if(!isNaN(index) && typeof this.route.allRoutes[index] === 'object'
+            && typeof this.route.allRoutes[index].legs === 'object' && this.route.allRoutes[index].legs.length > 0){
 
-            // Unwrap received itenaries data
+                this.route.currentRoute = this.route.allRoutes[index].legs;
+
+                // TODO: Usability: shall we keep old routes here?
+                this.route.allRoutes = {};
+
+                console.log(this.route.from);
+                console.log(this.route.to);
+                console.log(this._getWayPoints());
+
+                this.mapManager.renderRoute(this.route.from, this.route.to, this._getWayPoints());
+                this.toStep(++this.currentStep);
+
+                return true;
+            }
+
+            this.error('Invalid itinerary data');
+            return false;
+        },
+
+        _getWayPoints: function(){
+            // TODO: Implementation, use lat / lon
+            return [
+                {
+                    location: 'Albergagatan 3-9, 02600 Esbo', // LatLng || google.maps.Place ||  String
+                    stopover: true  // Mandatory to include in the route
+                },
+                {
+                    location: 'Urho Kekkonens gata 1, 00100 Helsingfors',
+                    stopover: true  // Mandatory to include in the route
+                }
+            ];
+            //return [];
+        },
+
+        _unwrapPlansData: function(data){
             $.each(['data', 'plan', 'itineraries'], function(k, v){
                 if(!data[v] || typeof data[v] !== 'object'){
                     data = [];
@@ -263,65 +313,91 @@ Lava.ClassManager.define(
                 }
                 data = data[v];
             });
+            return data;
+        },
 
-            console.log(data);
+        _appendPlansHtml: function(data){
+            var container = $('#step-routes').first();
 
-            if(data.length > 0){
-                var container = $('#step-routes').first();
-                if(typeof container === 'object' && container.length > 0){
-                    var list = $("<ul class='itineraries-list'></ul>");
+            if(typeof container === 'object' && container.length > 0){
+                var list = $("<ul class='itineraries-list'></ul>");
 
-                    $.each(data, function(i, v){
-                        var item = $("<li class='itineraries-item'></li>");
-                        if(v.duration){
-                            $("<span class='duration'>" + Manager.secondsToHuman(v.duration) + "</span>").appendTo(item);
-                        }
-                        if(v.walkDistance){
-                            $("<span class='distance'>" + Manager.metersToHuman(v.walkDistance) + "</span>").appendTo(item);
-                        }
-                        if(v.legs && typeof v.legs === 'object'){
-                            console.log(v.legs);
-                            var itemParts = $("<ul class='item-parts'></ul>");
-                            $.each(v.legs, function(i, v){
-                                console.log(v);
+                $.each(data, function(i, v){
+                    var item = $("<li class='itineraries-item'></li>").data('itinerary', i);
+                    if(v.duration){
+                        $("<span class='duration'>" + Manager.secondsToHuman(v.duration) + "</span>").appendTo(item);
+                    }
+                    if(v.walkDistance){
+                        $("<span class='distance'>" + Manager.metersToHuman(v.walkDistance) + "</span>").appendTo(item);
+                    }
+                    if(v.legs && typeof v.legs === 'object'){
+                        var itemParts = $("<ul class='item-parts'></ul>");
+                        $.each(v.legs, function(i, v){
+                            var itemPart = $("<li class='item-parts-part'></li>");
+                            if(v.mode){
+                                $("<span class='mode'>" + v.mode + "</span>").appendTo(itemPart);
+                            }
+                            if(v.distance){
+                                $("<span class='distance'>" + Manager.metersToHuman(v.distance) + "</span>").appendTo(itemPart);
+                            }
+                            if(v.duration){
+                                $("<span class='duration'>" + Manager.secondsToHuman(v.duration) + "</span>").appendTo(itemPart);
+                            }
+                            if(v.startTime){
+                                $("<span class='start-time'>" + Manager.unixTimeToHuman(v.startTime) + "</span>").appendTo(itemPart);
+                            }
+                            if(v.endTime){
+                                $("<span class='arrival-time'>" + Manager.unixTimeToHuman(v.endTime) + "</span>").appendTo(itemPart);
+                            }
+                            if(v.from && v.from.name){
+                                $("<span class='from'>" + v.from.name + "</span>").appendTo(itemPart);
+                            }
+                            if(v.to && v.to.name){
+                                $("<span class='to'>" + v.to.name + "</span>").appendTo(itemPart);
+                            }
+                            $(itemParts).append(itemPart);
+                        });
+                        $(item).append(itemParts);
+                    }
+                    $(list).append(item);
+                });
+                $(container).append(list);
+            }
+        },
 
-                                var itemPart = $("<li class='item-parts-part'></li>");
-                                if(v.mode){
-                                    $("<span class='mode'>" + v.mode + "</span>").appendTo(itemPart);
-                                }
-                                if(v.distance){
-                                    $("<span class='distance'>" + Manager.metersToHuman(v.distance) + "</span>").appendTo(itemPart);
-                                }
-                                if(v.duration){
-                                    $("<span class='duration'>" + Manager.secondsToHuman(v.duration) + "</span>").appendTo(itemPart);
-                                }
-                                if(v.endTime){
-                                    $("<span class='arrival-time'>" + Manager.unixTimeToHuman(v.endTime) + "</span>").appendTo(itemPart);
-                                }
-                                if(v.from && v.from.name){
-                                    $("<span class='from'>" + v.from.name + "</span>").appendTo(itemPart);
-                                }
-                                if(v.to && v.to.name){
-                                    $("<span class='to'>" + v.to.name + "</span>").appendTo(itemPart);
-                                }
-                                $(itemParts).append(itemPart);
-                            });
-                            $(item).append(itemParts);
-                        }
-                        $(list).append(item);
-                    });
+        _bindPlanListEvents: function(){
+            var self = this;
+            $('.itineraries-list > .itineraries-item').each(function(){
+                $(this).on('click', function(){
+                    self.setItinerary($(this).data('itinerary'));
+                });
+            });
+        },
 
-                    $(container).append(list);
 
-                    // TODO: Add routes here
+        // We must pass reference to self (handler) as a parameter, because this method might be
+        // a callback from the digitransit manager
+        showPlans: function(data, callbackOnFail, handler){
+            var self = handler,
+                err = false;
+
+            try{
+                data = self._unwrapPlansData(data);
+                console.log(data);
+
+                if(data.length > 0){
+                    self._appendPlansHtml(data);
+                    self.route.allRoutes = data;
+                    self._persist('route', self.route);
+                    self._bindPlanListEvents();
                     return true;
                 }
+            } catch(e){
+                err = e;
             }
 
-            console.log('Something is wrong');
-
             if(callbackOnFail && typeof callbackOnFail === 'function'){
-                callbackOnFail('No plans available for the route');
+                callbackOnFail(err ? err : 'No plans available for the route');
             }
         },
 

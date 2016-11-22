@@ -91,34 +91,25 @@ Lava.ClassManager.define(
             return typeof el === 'object' && typeof el[prop] !== 'undefined';
         },
 
+        _toLatLng: function(o){
+            if(typeof o === 'object' && o.lat && !isNaN(o.lat) && o.lon && !isNaN(o.lon)){
+                return new google.maps.LatLng(o.lat, o.lon)
+            }
+            this.error('Invalid location point data');
+        },
+
         error: function(msg){
             // TODO: Show nicely to the user, possibly implement localization
             console.log("ERROR: " + msg);
         },
 
-        _getWayPoints: function(){
-            // TODO: Implementation
-            // receive from reittiopas
-            // use LatLng ?
-            return [
-                {
-                    location: 'Albergagatan 3-9, 02600 Esbo', // LatLng || google.maps.Place ||  String
-                    stopover: true  // Mandatory to include in the route
-                },
-                {
-                    location: 'Urho Kekkonens gata 1, 00100 Helsingfors',
-                    stopover: true  // Mandatory to include in the route
-                }
-            ];
-        },
-
-        renderRoute: function(from, to){
+        renderRoute: function(from, to, waypoints){
             var self = this;
 
             this.directionsService.route({
-                origin: from,
-                destination: to,
-                waypoints: self._getWayPoints(),
+                origin: self._toLatLng(from),
+                destination: self._toLatLng(to),
+                waypoints: waypoints,
                 travelMode: google.maps.TravelMode.WALKING // TRANSIT
             }, function(response, status) {
                 if (status === google.maps.DirectionsStatus.OK) {

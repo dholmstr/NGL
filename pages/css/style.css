@@ -10,3 +10,9 @@
     content: 'Walking Distance: ';
     display: inline-block;
 }
+
+/* Step 4 */
+#map-container{
+    width: 400px;
+    height: 400px;
+}
