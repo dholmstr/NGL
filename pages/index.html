@@ -4,12 +4,19 @@
     <title>Never Get Lost</title>
     <meta name="viewport" content="initial-scale=1.0">
     <meta charset="utf-8">
-    <link rel="stylesheet" href="css/style.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
+	<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"/>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script src="http://maps.googleapis.com/maps/api/js?sensor=false&amp;libraries=places"	type="text/javascript"></script>
     <script src="lib/class_manager.js"></script>
     <script src="lib/digitransit_manager.js"></script>
     <script src="lib/map_manager.js"></script>
     <script src="lib/manager.js"></script>
+	<script src="lib/jquery-1.4.5.js"></script>
+	<script src="lib/jquery.mobile-1.4.5.min.js"></script>
+	<script src="lib/jquery.geocomplete.js"></script>
+	
 </head>
 <body>
 <header>
@@ -20,12 +27,12 @@
 </header>
 <main>
     <section id="step-from">
-        <label for="input-from">From</label>
-        <input id="input-from" name="from" type="search" size="35" placeholder="From" required>
+        <label for="input-from"><b>From this address</b></label>
+        <input id="input-from" name="from" type="search" oninput='$("#input-from").geocomplete()' size="35" placeholder="From" required>
     </section>
     <section id="step-to">
-        <label for="input-to">From</label>
-        <input id="input-to" name="to" type="search" size="35" placeholder="To" required>
+        <label for="input-to"><b>To this address</b></label>
+        <input id="input-to" name="to" type="search" oninput='$("#input-to").geocomplete()'  size="35" placeholder="To" required>
     </section>
     <section id="step-routes">
         <span>Routes here</span>
