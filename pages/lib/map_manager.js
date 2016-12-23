@@ -30,8 +30,9 @@ Lava.ClassManager.define(
                     }
                 });
 
-                if(!err){
-                    self._loadScript("https://maps.googleapis.com/maps/api/js?key=" + config.apiKey, function(){
+               if(!err){
+                    //self._loadScript("https://maps.googleapis.com/maps/api/js?key=" + config.apiKey, function(){
+						self._loadScript(config.apiKey, function(){
                         if(self._init(config) && typeof callback === 'function'){
                             callback();
                         }

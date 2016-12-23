@@ -105,13 +105,7 @@ Lava.ClassManager.define(
             }
 
             this.digitransitManager = new DigitransitManager();
-
-            // TODO: Move this to defaults
-            this.mapManager = new MapManager({
-                'mapContainerId' : 'map-container',
-                'directionsContainerId': 'map-directions-container',
-                'apiKey' : 'AIzaSyAq4CZxYBwQ3Mf3RDJGH6CYUbBU1nonVpI'
-            });
+            
 
             this.toStep(this.currentStep);
         },
@@ -128,6 +122,12 @@ Lava.ClassManager.define(
             if(!this.route){
                 this.route = this.defaults.route;
             }
+
+			this.mapManager = new MapManager({
+                'mapContainerId' : 'map-container',
+                'directionsContainerId': 'map-directions-container',
+                'apiKey' : 'AIzaSyAq4CZxYBwQ3Mf3RDJGH6CYUbBU1nonVpI'
+            });			
         },
 
         _initButtons: function(){
@@ -146,6 +146,7 @@ Lava.ClassManager.define(
             // Bind button events
             // TODO: Check if button is not disabled
             // TODO: Add this.err = null; (Clear errors before processing button click)
+
             if(!self.err){
                 $(self.buttons.back.el).on('click', function(){
                     self.toStep(--self.currentStep);
@@ -193,12 +194,13 @@ Lava.ClassManager.define(
 
         // Might be called from callback, i.e. should use only static methods here
         error: function(msg){
-            // TODO: Proper way to show messages
+			window.alert('ERROR: ' + msg);
             console.log('ERROR: ' + msg);
         },
 
         _persist: function(key, value){
-            // TODO: Implementation. Store data in browser local storage
+			//localStorage.setItem('Persist called for key: ' + key);
+			//localStorage.setItem('value: ' + value);
             console.log('Persist called for key: ' + key + " value: " + value);
         },
 
@@ -292,13 +294,25 @@ Lava.ClassManager.define(
 
         _getWayPoints: function(){
             // TODO: Implementation, use lat / lon
+			var geocoder = new google.maps.Geocoder();
+			var addfrom = document.getElementById("input-from").value;
+			var addto = document.getElementById("input-to").value;
+			geocoder.geocode( { 'addfrom': addfrom}, function(results, status) {
+				if (status == google.maps.GeocoderStatus.OK) {
+					var latitude = results[0].geometry.location.lat();
+					var longitude = results[0].geometry.location.lng();
+			}
+			});
+				window.alert(latitude, longitude);
             return [
-                {
-                    location: 'Albergagatan 3-9, 02600 Esbo', // LatLng || google.maps.Place ||  String
-                    stopover: true  // Mandatory to include in the route
+                {						
+					location: 'Albergagatan 3-9, 02600 Esbo', // LatLng || google.maps.Place ||  String
+					//location: new google.maps.LatLng(addfrom.geometry.location.latitude(), addfrom.geometry.location.latitude()),
+					stopover: true  // Mandatory to include in the route
                 },
                 {
                     location: 'Urho Kekkonens gata 1, 00100 Helsingfors',
+					//location: new google.maps.LatLng(addto.geometry.location.latitude, addto.geometry.location.latitude),
                     stopover: true  // Mandatory to include in the route
                 }
             ];
