@@ -42,10 +42,18 @@ Lava.ClassManager.define(
                 from : {},
                 to: {},
                 allRoutes: {},
-                currentRoute: {}
+                currentRoute: {},
+                wayPoints: []
             },
 
-            'currentStep': 1
+            mapConfig: {
+                'mapContainerId': 'map-container',
+                'directionsContainerId': 'map-directions-container',
+                'apiKey': 'AIzaSyAq4CZxYBwQ3Mf3RDJGH6CYUbBU1nonVpI'
+            },
+
+            'currentStep': 1,
+            'distanceMinShowDirections': 50 // meters
         },
 
         buttons: {
@@ -85,14 +93,16 @@ Lava.ClassManager.define(
                 'init': 'initItineraries'
             },
             4: {
-                'container': null
+                'container': null,
+                'init': 'initMapRoute'
             }
         },
 
         currentStep: null,
         err: null,
         route: null,
-
+        fromInput: null,
+        toInput: null,
         digitransitManager: null,
         mapManager: null,
 
@@ -105,14 +115,18 @@ Lava.ClassManager.define(
             }
 
             this.digitransitManager = new DigitransitManager();
-            
 
-            this.toStep(this.currentStep);
+            var self = this;
+
+            // Wait until mapManager is fully initialized (callback)
+            this.mapManager = new MapManager(self.defaults.mapConfig, (function(){
+                self.fromInput = new google.maps.places.Autocomplete(document.getElementById('input-from'));
+                self.toInput = new google.maps.places.Autocomplete(document.getElementById('input-to'));
+                self.toStep(self.currentStep);
+            }));
         },
 
         _initDefaults: function(){
-            // TODO: Refactor me if there are more params
-
             this.currentStep = this._getPersisted('currentStep');
             if(!this.currentStep){
                 this.currentStep = this.defaults.currentStep;
@@ -122,12 +136,6 @@ Lava.ClassManager.define(
             if(!this.route){
                 this.route = this.defaults.route;
             }
-
-			this.mapManager = new MapManager({
-                'mapContainerId' : 'map-container',
-                'directionsContainerId': 'map-directions-container',
-                'apiKey' : 'AIzaSyAq4CZxYBwQ3Mf3RDJGH6CYUbBU1nonVpI'
-            });			
         },
 
         _initButtons: function(){
@@ -194,19 +202,21 @@ Lava.ClassManager.define(
 
         // Might be called from callback, i.e. should use only static methods here
         error: function(msg){
+            // TODO: Show nicely to the user, possibly implement localization
 			window.alert('ERROR: ' + msg);
             console.log('ERROR: ' + msg);
         },
 
         _persist: function(key, value){
-			//localStorage.setItem('Persist called for key: ' + key);
-			//localStorage.setItem('value: ' + value);
-            console.log('Persist called for key: ' + key + " value: " + value);
+            if(typeof Storage !== 'undefined'){
+                localStorage.setItem(key, JSON.stringify(value));
+            }
         },
 
         _getPersisted: function(key){
-            // TODO: Implementation
-            console.log('_getPersisted called for key: ' + key);
+            if(typeof Storage !== 'undefined'){
+                return JSON.parse(localStorage.getItem(key));
+            }
         },
 
         toStep: function(step){
@@ -254,19 +264,26 @@ Lava.ClassManager.define(
             // Clear container html
             $(this.steps[this.currentStep].container).html('');
 
-            var route = this._getPersisted('route');
-            if(typeof routes === 'object' && typeof routes.allRoutes === 'object'){
-                return this.showPlans(routes.allRoutes, this.error, this);
+            // Try to use routes stored locally
+            if(typeof this.route === 'object' && this.route.allRoutes.length > 0){
+                return this.showPlans(this.route.allRoutes, this.error, this);
             }
 
             // Load Digitransit itineraries
             this.digitransitManager.getPlans(
                 this.route.from,
                 this.route.to,
-                this.showPlans, // callback on success
-                this.error,     // callback on failure
-                this            // referense to the current object
+                this._prepareItineraries,   // callback on success
+                this.error,                 // callback on failure
+                this                        // reference to the current object
             );
+        },
+
+        // Format and save in local storage itineraries received from digitransit
+        _prepareItineraries: function(data, callbackOnFail, handler){
+            handler.route.allRoutes = handler._unwrapPlansData(data);
+            handler._persist('route', handler.route);
+            return handler.showPlans(handler.route.allRoutes, handler.error, handler);
         },
 
         setItinerary: function(index){
@@ -274,17 +291,8 @@ Lava.ClassManager.define(
             && typeof this.route.allRoutes[index].legs === 'object' && this.route.allRoutes[index].legs.length > 0){
 
                 this.route.currentRoute = this.route.allRoutes[index].legs;
-
-                // TODO: Usability: shall we keep old routes here?
-                this.route.allRoutes = {};
-
-                console.log(this.route.from);
-                console.log(this.route.to);
-                console.log(this._getWayPoints());
-
-                this.mapManager.renderRoute(this.route.from, this.route.to, this._getWayPoints());
+                this._persist('route', this.route);
                 this.toStep(++this.currentStep);
-
                 return true;
             }
 
@@ -292,31 +300,52 @@ Lava.ClassManager.define(
             return false;
         },
 
-        _getWayPoints: function(){
-            // TODO: Implementation, use lat / lon
-			var geocoder = new google.maps.Geocoder();
-			var addfrom = document.getElementById("input-from").value;
-			var addto = document.getElementById("input-to").value;
-			geocoder.geocode( { 'addfrom': addfrom}, function(results, status) {
-				if (status == google.maps.GeocoderStatus.OK) {
-					var latitude = results[0].geometry.location.lat();
-					var longitude = results[0].geometry.location.lng();
-			}
-			});
-				window.alert(latitude, longitude);
-            return [
-                {						
-					location: 'Albergagatan 3-9, 02600 Esbo', // LatLng || google.maps.Place ||  String
-					//location: new google.maps.LatLng(addfrom.geometry.location.latitude(), addfrom.geometry.location.latitude()),
-					stopover: true  // Mandatory to include in the route
-                },
-                {
-                    location: 'Urho Kekkonens gata 1, 00100 Helsingfors',
-					//location: new google.maps.LatLng(addto.geometry.location.latitude, addto.geometry.location.latitude),
+
+        initMapRoute: function(){
+            if(typeof this.route !== 'object' || !this.route.from || !this.route.to){
+                this.error('Cannot render itinerary');
+                return;
+            }
+
+            this.mapManager.clearRoutes();
+            this.mapManager.renderRoute(this.route.from, this.route.to, this._getWayPoints());
+        },
+
+        _pushPoint: function(point){
+            var len = this.route.wayPoints.length;
+            if(len === 0 || this.mapManager.getDistance(this.route.wayPoints[len - 1].location, point) > this.defaults.distanceMinShowDirections){
+                this.route.wayPoints.push({
+                    location: point,
                     stopover: true  // Mandatory to include in the route
+                });
+            }
+        },
+
+        _getWayPoints: function(){
+            // TODO: Use separate Google Maps route for each walk, for transit show digitransit polyline
+            var lastPoint = null,
+                self = this;
+
+            this.route.wayPoints = [];
+
+            $(this.route.currentRoute).each(function(){
+                var from = new google.maps.LatLng(this.from.lat, this.from.lon);
+                var to = new google.maps.LatLng(this.to.lat, this.to.lon);
+
+                if(lastPoint !== null && self.mapManager.getDistance(lastPoint, from) > self.defaults.distanceMinShowDirections){
+                    self._pushPoint(lastPoint);
+                    self._pushPoint(from);
                 }
-            ];
-            //return [];
+
+                if(this.mode === 'WALK'){
+                    self._pushPoint(from);
+                    self._pushPoint(to);
+                }
+
+                lastPoint = to;
+            });
+
+            return this.route.wayPoints;
         },
 
         _unwrapPlansData: function(data){
@@ -392,18 +421,11 @@ Lava.ClassManager.define(
         // We must pass reference to self (handler) as a parameter, because this method might be
         // a callback from the digitransit manager
         showPlans: function(data, callbackOnFail, handler){
-            var self = handler,
-                err = false;
-
+            var err = false;
             try{
-                data = self._unwrapPlansData(data);
-                console.log(data);
-
                 if(data.length > 0){
-                    self._appendPlansHtml(data);
-                    self.route.allRoutes = data;
-                    self._persist('route', self.route);
-                    self._bindPlanListEvents();
+                    handler._appendPlansHtml(data);
+                    handler._bindPlanListEvents();
                     return true;
                 }
             } catch(e){
@@ -443,39 +465,33 @@ Lava.ClassManager.define(
         },
 
         validateFrom: function(){
-            var el = $(this.steps[this.currentStep].container).find('input[name=from]').first();
-            if(typeof el !== 'object' || el.length === 0 || $(el).val().length === 0){
-                this.error('Please specify starting point');
+            var place = this.fromInput.getPlace();
+            if(!place.geometry) {
+                this.error('Cannot find starting point');
                 return false;
             }
 
-            var from = $(el).val();
-            // TODO: Convert from to lat/lon here
-            console.log('from: ' + from);
-
             this.route.from = {
-                lat:60.199196699999995,
-                lon:24.9397302
+                lat: place.geometry.location.lat(),
+                lon: place.geometry.location.lng()
             };
+
             this._persist('route', this.route);
             return true;
         },
 
         validateTo: function(){
-            var el = $(this.steps[this.currentStep].container).find('input[name=to]').first();
-            if(typeof el !== 'object' || el.length === 0 || $(el).val().length === 0){
-                this.error('Please specify destination');
+            var place = this.toInput.getPlace();
+            if(!place.geometry) {
+                this.error('Cannot find destination');
                 return false;
             }
 
-            var to = $(el).val();
-            // TODO: Convert to to lat/lon here
-            console.log('to: ' + to);
-
             this.route.to = {
-                lat:60.168438,
-                lon:24.929283
+                lat: place.geometry.location.lat(),
+                lon: place.geometry.location.lng()
             };
+
             this._persist('route', this.route);
             return true;
         }

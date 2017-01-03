@@ -30,9 +30,8 @@ Lava.ClassManager.define(
                     }
                 });
 
-               if(!err){
-                    //self._loadScript("https://maps.googleapis.com/maps/api/js?key=" + config.apiKey, function(){
-						self._loadScript(config.apiKey, function(){
+                if(!err){
+                    self._loadScript("https://maps.googleapis.com/maps/api/js?libraries=geometry,places&key=" + config.apiKey, function(){
                         if(self._init(config) && typeof callback === 'function'){
                             callback();
                         }
@@ -119,5 +118,13 @@ Lava.ClassManager.define(
                     self.error('Directions request failed due to ' + status);
                 }
             });
+        },
+
+        clearRoutes: function(){
+            this.directionsRenderer.setDirections({routes: []});
+        },
+
+        getDistance: function(p1, p2){
+            return google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
         }
     });
