@@ -1,0 +1,316 @@
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('../fonts/fontawesome-webfont.eot?v=4.7.0');
+    src: url('../fonts/fontawesome-webfont.eot?#iefix&v=4.7.0') format('embedded-opentype'), url('../fonts/fontawesome-webfont.woff2?v=4.7.0') format('woff2'), url('../fonts/fontawesome-webfont.woff?v=4.7.0') format('woff'), url('../fonts/fontawesome-webfont.ttf?v=4.7.0') format('truetype'), url('../fonts/fontawesome-webfont.svg?v=4.7.0#fontawesomeregular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body{
+    font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #cfd2da;
+    background-color: #252830;
+}
+
+.clearfix:after,.clearfix:before{
+    display:table;
+    content:" "
+}
+
+.clearfix:after{
+    clear:both
+}
+
+input{
+    font-size: 14px;
+}
+
+input[type=text]{
+    width: 100%;
+    line-height: 30px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    border: none;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    outline: none;
+    box-shadow: none;
+    margin: 10px 0;
+}
+
+button.button{
+    border: none;
+    outline: none;
+    padding: 0;
+    background: none;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+button.button > span{
+    display: inline-block;
+    background: #fff;
+    line-height: 36px;
+    padding: 0 15px;
+    border-radius: 3px;
+    color:#252830;
+    font-weight: normal;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+button.button.main > span{
+    background: #1ca8dd;
+}
+
+button.button:hover > span, button.button:active > span{
+    background: #e64759;
+    cursor: pointer;
+}
+
+header, main, footer, #control-panel{
+    position: relative;
+    width: 100%;
+    clear: both;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+}
+
+.container{
+    width: 96%;
+    margin:0 auto;
+    position:relative;
+}
+
+/*
+ *  Header
+ *  --------------------------------------------- */
+
+header{
+    border-bottom: 1px solid #cfd2da;
+    line-height:30px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 16px;
+}
+
+header > .container{
+    padding: 10px 0;
+}
+
+header .logo-wrap{
+    float:left;
+}
+
+header .sound-control-wrap{
+    float:right;
+}
+
+.sound-button{
+    background: none;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    font-size: 22px;
+    color: #cfd2da;
+}
+
+.sound-button:hover, .sound-button:active, .sound-button:focus{
+    color: #fff;
+    cursor: pointer;
+}
+
+.sound-button:before{
+    display: inline-block;
+    font-family: 'FontAwesome';
+    content: "\f026";
+}
+
+.sound-button.active:before{
+    content: "\f028";
+}
+
+.sound-button.in:before{
+    content: "\f131";
+}
+
+.sound-button.in.active:before{
+    content: "\f130";
+}
+
+/*
+ *  Control panel
+ *  --------------------------------------------- */
+
+.control-panel{
+    position: relative;
+    min-height: 48px;
+}
+
+.control-panel button{
+    display: none;
+}
+
+.control-panel button.left{
+    float:left;
+    margin-right: 3px;
+}
+
+.control-panel button.right{
+    float:right;
+    margin-left: 3px;
+}
+
+/*
+ *  Footer
+ *  --------------------------------------------- */
+
+footer{
+    border-top: 1px solid #cfd2da;
+}
+
+footer .info-panel{
+    height: 40px;
+    padding-top:10px;
+    line-height: 15px;
+    text-align: center;
+    clear: both;
+    width: 100%;
+}
+
+/*
+ *  Main
+ *  --------------------------------------------- */
+
+main label{
+    font-weight: normal;
+    font-size: 85%;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+section{
+    padding: 20px 0;
+    display:none;
+}
+
+section:first-child{
+    display: block;
+}
+
+/*
+ *  Itineraries
+ *  --------------------------------------------- */
+
+ul.itineraries-list{
+    padding: 0;
+    margin: 0;
+}
+
+ul.itineraries-list li{
+    display: block;
+    width: 100%;
+    position: relative;
+    margin: 10px 0;
+}
+
+ul.itineraries-list > li{
+    margin-bottom: 10px;
+}
+
+ul.itineraries-list li .route-title{
+    display: inline-block;
+    font-weight: bold;
+    text-align: center;
+}
+
+ul.itineraries-list > li ul{
+    padding: 0;
+    display: none;
+}
+
+ul.itineraries-list .itinerary-title-wrap{
+    display: block;
+    width: 100%;
+    position: relative;
+    border-bottom: 1px solid #cfd2da;
+    padding: 10px 0;
+}
+
+ul.itineraries-list li ul li .left{
+    display: block;
+    float: left;
+    width: 40%;
+    max-width: 120px;
+    padding-right: 10px;
+    line-height: 20px;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+}
+
+ul.itineraries-list li ul li .left > span, ul.itineraries-list li ul li .right > span{
+    display: block;
+    width: 100%;
+}
+
+ul.itineraries-list li ul li .left > span.info, ul.itineraries-list li ul li .left > span.duration{
+    font-size: 0.85em;
+    line-height: 15px;
+}
+
+ul.itineraries-list li ul li .right{
+    display: block;
+    float: left;
+    width: 60%;
+    line-height: 25px;
+}
+
+ul.itineraries-list li ul li .right .start-time, ul.itineraries-list li ul li .right .arrival-time{
+    margin-right: 10px;
+}
+
+ul.itineraries-list .itineraries-item .itinerary-title-wrap a{
+    color: #cfd2da;
+    text-decoration: none;
+}
+
+ul.itineraries-list .itineraries-item .itinerary-title-wrap span.itinerary-toggle{
+    position: absolute;
+    right: 0;
+    width: 40px;
+    text-align: right;
+    display: inline-block;
+}
+
+ul.itineraries-list .itineraries-item .itinerary-title-wrap span.itinerary-toggle:hover{
+    cursor: pointer;
+}
+
+ul.itineraries-list .itineraries-item .itinerary-title-wrap span.itinerary-toggle:before{
+    display: inline-block;
+    text-align: right;
+    font-family: 'FontAwesome';
+    content: "\f105";
+}
+
+ul.itineraries-list .itineraries-item.active .itinerary-title-wrap span.itinerary-toggle:before{
+    content: "\f107";
+}
+
+ul.itineraries-list li.itineraries-item.active ul{
+    display: block;
+}
+
+/*
+ *  Map
+ *  --------------------------------------------- */
+
+#map-container{
+    width: 100%;
+    min-height: 200px;
+}
