@@ -106,13 +106,15 @@ Lava.ClassManager.define(
                 'container': null,
                 'validators': {
                     'next': 'validateFrom'
-                }
+                },
+                'init': 'initSpeechRecognitionTarget'
             },
             2: {
                 'container': null,
                 'validators': {
                     'next': 'validateTo'
-                }
+                },
+                'init': 'initSpeechRecognitionTarget'
             },
             3: {
                 'container': null,
@@ -137,6 +139,7 @@ Lava.ClassManager.define(
 
         digitransitManager: null,
         mapManager: null,
+        speechRecognitionManager: null,
         translator: null,
 
         err: null,
@@ -152,6 +155,7 @@ Lava.ClassManager.define(
             }
 
             this.digitransitManager = new DigitransitManager();
+            this.speechRecognitionManager = new SpeechRecognitionManager();
             this.translator = new Translator({lang: 'fi'});
 
             var self = this;
@@ -297,6 +301,7 @@ Lava.ClassManager.define(
             });
 
             this._initStepButtons(step);
+            this.speechRecognitionManager.hideControl();
 
             // Call to a step-specific method if such a method specified in the step config
             if(this._canCall(this.steps[this.currentStep].init)){
@@ -319,6 +324,19 @@ Lava.ClassManager.define(
             }
             // TODO: Nicer way to show errors
             alert(msg);
+        },
+
+        //
+        //
+        // Speech recognition ---------------------------------------------------------------
+
+        initSpeechRecognitionTarget: function(){
+            if(this.currentStep == 1){
+                this.speechRecognitionManager.setTarget($('#input-from'));
+            } else if(this.currentStep == 2){
+                this.speechRecognitionManager.setTarget($('#input-to'));
+            }
+            this.speechRecognitionManager.showControl();
         },
 
         //

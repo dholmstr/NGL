@@ -24,6 +24,7 @@ head.load([
             });
         }
 
+        /*
         var soundInput = $('#sound-input').first();
         $('#sound-button').on('click', function(){
             if($(this).hasClass('active')){
@@ -34,5 +35,6 @@ head.load([
                 $(soundInput).val(1);
             }
         });
+        */
     });
 });
