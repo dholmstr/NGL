@@ -50,6 +50,10 @@ button.button{
     margin-bottom: 5px;
 }
 
+button.button:hover, button.button:active{
+    cursor: pointer;
+}
+
 button.button > span{
     display: inline-block;
     background: #fff;
@@ -68,7 +72,6 @@ button.button.main > span{
 
 button.button:hover > span, button.button:active > span{
     background: #e64759;
-    cursor: pointer;
 }
 
 header, main, footer, #control-panel{
@@ -313,4 +316,46 @@ ul.itineraries-list li.itineraries-item.active ul{
 #map-container{
     width: 100%;
     min-height: 200px;
+}
+
+/*
+ *  Directions panel
+ *  --------------------------------------------- */
+
+#map-directions-container table, #map-directions-container tbody{
+    display: inline-block;
+}
+
+#map-directions-container .adp-warnbox, #map-directions-container .adp-placemark,
+#map-directions-container .adp-legal, #map-directions-container .adp-summary,
+#map-directions-container tr{
+    display: none;
+}
+
+#map-directions-container tr *{
+    display: inline;
+}
+
+#map-directions-container tr td{
+    padding: 0 0 0 3px;
+}
+
+#map-directions-container tr td:nth-child(3){
+    padding-left: 0;
+}
+
+#map-directions-container tr td:first-child, #map-directions-container tr td:nth-child(2){
+    display: none;
+}
+
+#map-directions-container tr:first-child{
+    display: inline-block;
+}
+
+#map-directions-container .adp, #map-directions-container .adp table{
+    color: #cfd2da;
+}
+
+#map-directions-container .adp .adp-step, #map-directions-container .adp .adp-substep{
+    border: none !important;
 }
