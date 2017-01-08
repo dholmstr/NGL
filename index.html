@@ -4,14 +4,10 @@
     <title>Never Get Lost</title>
     <meta name="viewport" content="initial-scale=1.0">
     <meta charset="utf-8">
-    <link rel="stylesheet" href="css/style.css" />
-    <script src="lib/jquery.js"></script>
-    <script src="lib/class_manager.js"></script>
-    <script src="lib/cache.js"></script>
-    <script src="lib/translator.js"></script>
-    <script src="lib/digitransit_manager.js"></script>
-    <script src="lib/map_manager.js"></script>
-    <script src="lib/manager.js"></script>
+    <link rel="stylesheet" href="skin/css/style.css" />
+    <script src="app/head.load.min.js"></script>
+    <script src="app/scripts.js"></script>
+    <script src="app/app.js"></script>
 </head>
 <body>
 <header>
@@ -58,37 +54,5 @@
         </div>
     </div>
 </footer>
-<script>
-    $(document).on('ready', function(){
-        $('main').css({
-            'min-height': $(window).height() - $('header').height() - $('#control-panel').first().height() - $('footer').height() - 20 + 'px'
-        });
-
-        var section = $('main').find('section').first();
-        if(typeof section === 'object' && section.length > 0){
-            $('#map-container').css({
-                'height': $('main').height()
-                - parseInt($(section).css('margin-top'))
-                - parseInt($(section).css('margin-bottom'))
-                - parseInt($(section).css('padding-top'))
-                - parseInt($(section).css('padding-bottom'))
-                + 'px'
-            });
-        }
-
-        var soundInput = $('#sound-input').first();
-        $('#sound-button').on('click', function(){
-            if($(this).hasClass('active')){
-                $(this).removeClass('active');
-                $(soundInput).val(0);
-            } else {
-                $(this).addClass('active');
-                $(soundInput).val(1);
-            }
-        });
-
-        var manager = new Manager();
-    });
-</script>
 </body>
 </html>

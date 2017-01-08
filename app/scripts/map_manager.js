@@ -17,7 +17,7 @@ Lava.ClassManager.define(
             'zoom': 15,
 
             location: {
-                icon: window.location + 'img/location.svg',
+                icon: window.location + 'skin/img/location.svg',
                 options: {
                     enableHighAccuracy: true,
                     maximumAge        : 30000,
