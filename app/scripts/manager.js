@@ -107,14 +107,14 @@ Lava.ClassManager.define(
                 'validators': {
                     'next': 'validateFrom'
                 },
-                'init': ['initSpeechRecognitionTarget', 'initAutoLocation']
+                'init': ['initFromStep', 'initSpeechRecognitionTarget', 'initAutoLocation']
             },
             2: {
                 'container': null,
                 'validators': {
                     'next': 'validateTo'
                 },
-                'init': 'initSpeechRecognitionTarget'
+                'init': ['initToStep', 'initSpeechRecognitionTarget']
             },
             3: {
                 'container': null,
@@ -656,6 +656,18 @@ Lava.ClassManager.define(
                 });
                 $(container).append(list);
             }
+        },
+
+        //
+        //
+        // Miscellaneous -----------------------------------------------------------------
+
+        initFromStep: function(){
+            this.route.to = {};
+        },
+
+        initToStep: function(){
+            this.route.allRoutes = {};
         }
     });
 
