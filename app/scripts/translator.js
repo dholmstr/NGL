@@ -43,6 +43,7 @@ Translator.phrases = {
     fi: {
         'Test phrase 1': 'Esimerkki lause 1',
         'This is a phrase with a variable %1': 'Toinen esimerkki %1',
-        '%1-RAIL': '%1-JUNA'
+        '%1-RAIL': '%1-JUNA',
+        'In %1 meters ': '%1 metrin päästä '
     }
 };

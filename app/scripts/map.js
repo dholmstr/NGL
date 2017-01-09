@@ -20,9 +20,14 @@ Lava.ClassManager.define(
                 icon: window.location + 'skin/img/location.svg',
                 options: {
                     enableHighAccuracy: true,
-                    maximumAge        : 30000,
-                    timeout           : 27000
+                    maximumAge        : 30000,  // milliseconds
+                    timeout           : 27000   // milliseconds
                 }
+            },
+
+            navigation: {
+                timeout: 10000,        // milliseconds
+                switchStep: 50         // meters
             }
         },
 
@@ -57,31 +62,40 @@ Lava.ClassManager.define(
 
         geolocation: null,
         geolocationInterval: null,
+
+        navigationInterval: null,
+
         marker: null,
 
         directionsPanel: null,
+        segmentPanel: null,
+
         directionsService: null,
         placeService: null,
         directionsRenderer: null,
+        translator: null,
+
+        currentSegment: -1,
+        currentStep: 0,
 
         init: function(config, callback){
             var self = this, err = false;
 
-            ['mapContainerId', 'buttonNextId', 'buttonBackId', 'directionsContainerId', 'apiKey'].forEach(function(param){
+            ['mapContainerId', 'buttonNextId', 'buttonBackId', 'directionsContainerId', 'apiKey', 'language'].forEach(function(param){
                 if(!self._hasProp(config, param)){
                     return err = true;
                 }
             });
 
             if(!err){
-                ['mapContainerId', 'buttonNextId', 'buttonBackId', 'directionsContainerId'].forEach(function(param){
+                ['mapContainerId', 'buttonNextId', 'buttonBackId', 'directionsContainerId', 'segmentContainerId'].forEach(function(param){
                     if(!self._isValidNodeId(config[param])){
                         return err = true;
                     }
                 });
 
                 if(!err){
-                    self._loadScript("https://maps.googleapis.com/maps/api/js?libraries=geometry,places&key=" + config.apiKey, function(){
+                    self._loadScript("https://maps.googleapis.com/maps/api/js?language=" + config.language + "&libraries=geometry,places&key=" + config.apiKey, function(){
                         if(self._init(config) && typeof callback === 'function'){
                             callback();
                         }
@@ -124,6 +138,7 @@ Lava.ClassManager.define(
 
             this.placeService = new google.maps.places.PlacesService(this.map);
             this.directionsPanel = document.getElementById(config.directionsContainerId);
+            this.segmentPanel = document.getElementById(config.segmentContainerId);
             this.directionsService = new google.maps.DirectionsService;
             this.directionsRenderer = new google.maps.DirectionsRenderer({
                 polylineOptions: JSON.parse(JSON.stringify(this.styles.ACTIVE)),
@@ -184,10 +199,26 @@ Lava.ClassManager.define(
             }
         },
 
+        setCurrentSegment: function(index){
+            this.currentSegment = parseInt(index);
+        },
+
+        getCurrentSegment: function(index){
+            return this.currentSegment;
+        },
+
+        setTranslator: function(translator){
+            this.translator = translator;
+        },
+
         renderRoute: function(route){
             var self = this,
                 config = {},
                 bounds = this.map.getBounds();
+
+            if(!bounds){
+                bounds = new google.maps.LatLngBounds();
+            }
 
             route.forEach(function(v, i){
                 config = JSON.parse(JSON.stringify(typeof self.styles[v.mode] !== 'undefined' ? self.styles[v.mode] : self.styles.DEFAULT));
@@ -216,26 +247,59 @@ Lava.ClassManager.define(
                 waypoints: waypoints,
                 travelMode: google.maps.TravelMode.WALKING
             }, function(response, status) {
-                if (status === google.maps.DirectionsStatus.OK) {
+                if(status === google.maps.DirectionsStatus.OK){
                     self.directionsRenderer.setMap(self.map);
-                    self.directionsRenderer.setPanel(self.directionsPanel);
-                    self.directionsRenderer.setDirections(response, function(){
-                        console.log('ready');
-                        console.log($('#map-directions-container').find('.adp-directions'));
-                    });
-                    self.directionsForward();
+                    self.directionsRenderer.setDirections(response);
+
+                    try{
+                        self.route[self.currentSegment].steps = response.routes[0].legs[0].steps;
+                    } catch(e){
+                        self.error('Failed to load navigation instructions');
+                    }
+
+                    self.toStep(0, self);
+                    self.startNavigation(self);
+
                 } else {
                     self.error('Directions request failed due to ' + status);
                 }
             });
         },
 
-        directionsForward: function(){
-            console.log('directionsForward');
-            console.log($('#map-directions-container'));
-            console.log($('#map-directions-container table'));
-            // TODO: Implementation
-            $('#map-directions-container').find('.adp-directions tr').first().addClass('active');
+        toStep: function(index, handler, distance){
+            if(!handler && typeof this.toStep === 'function'){
+                handler = this;
+            }
+
+            handler.currentStep = index;
+
+            try{
+                $(handler.directionsPanel).text(
+                    (distance && typeof handler.translator === 'object' ? handler.translator.translate('In %1 meters ', [distance]) : '') +
+                    handler.route[handler.currentSegment].steps[index].instructions.replace(/(<([^>]+)>)/ig, '')
+                );
+            } catch(e){
+                $(handler.directionsPanel).text('');
+                clearInterval(handler.navigationInterval);
+            }
+        },
+
+        startNavigation: function(handler){
+            if(!handler && typeof this.startNavigation === 'function'){
+                handler = this;
+            }
+
+            handler.navigationInterval = setInterval(function(){
+                var distance = google.maps.geometry.spherical.computeDistanceBetween(
+                    handler.route[handler.currentSegment].steps[handler.currentStep].end_point,
+                    handler.geolocation
+                );
+
+                if(distance < handler.defaults.navigation.switchStep){
+                    handler.toStep(handler.currentStep + 1, null, parseInt(distance));
+                }
+
+            }, handler.defaults.navigation.timeout);
         },
 
         getPlace: function(query, handler, callback){
@@ -254,10 +318,14 @@ Lava.ClassManager.define(
         // Segment transitions ------------------------------------------------------------------
 
         toSegment: function(index){
+            this.currentSegment = index;
+            clearInterval(this.navigationInterval);
+
             this.directionsRenderer.setMap(null);
             this.directionsRenderer.setPanel(null);
 
             this.handleSegmentNav(index);
+            this._updatePanel();
 
             for(var i = 0; i < index; i++){
                 this.hideSegment(i);
@@ -291,6 +359,53 @@ Lava.ClassManager.define(
 
             } else {
                 this.error('Invalid route data');
+            }
+        },
+
+        _updatePanel: function(){
+            $(this.directionsPanel).text('');
+            $(this.segmentPanel).text('');
+
+            try{
+                if(this.currentSegment >= 0 && this.currentSegment < this.route.length){
+                    if(this.route[this.currentSegment].mode == 'WALK'){
+                        $(this.segmentPanel).text(
+                            this.translator.translate(
+                                '%1 %2 to %3', [
+                                    this.route[this.currentSegment].mode,
+                                    Manager.metersToHuman(this.route[this.currentSegment].distance),
+                                    this.route[this.currentSegment].to.name
+                                ]
+                            )
+                        );
+
+                    } else if(this.route[this.currentSegment].mode == 'BUS' || this.route[this.currentSegment].mode == 'TRAM'){
+                        $(this.segmentPanel).text(
+                            this.translator.translate(
+                                '%1 %2 to %3', [
+                                    this.route[this.currentSegment].mode,
+                                    this.route[this.currentSegment].route.shortName,
+                                    this.route[this.currentSegment].to.name
+                                ]
+                            )
+                        );
+                    } else if(this.route[this.currentSegment].mode == 'RAIL' || this.route[this.currentSegment].mode == 'SUBWAY'){
+                        $(this.segmentPanel).text(
+                            this.translator.translate(
+                                '%1 %2: to %3', [
+                                    this.route[this.currentSegment].mode,
+                                    this.route[this.currentSegment].route.longName,
+                                    this.route[this.currentSegment].to.name
+                                ]
+                            )
+                        );
+                    }
+                } else if(this.currentSegment == this.route.length){
+                    $(this.segmentPanel).text(this.translator.translate('Destination'));
+                }
+
+            } catch(e){
+                $(this.segmentPanel).text('');
             }
         },
 

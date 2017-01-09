@@ -50,8 +50,7 @@ Lava.ClassManager.define(
                 from : {},
                 to: {},
                 allRoutes: {},
-                currentRoute: {},
-                currentSegment: -1
+                currentRoute: {}
             },
 
             mapConfig: {
@@ -59,7 +58,9 @@ Lava.ClassManager.define(
                 'buttonNextId': 'button-go',
                 'buttonBackId': 'button-go-back',
                 'directionsContainerId': 'map-directions-container',
-                'apiKey': 'AIzaSyAq4CZxYBwQ3Mf3RDJGH6CYUbBU1nonVpI'
+                'segmentContainerId': 'map-segment-data-container',
+                'apiKey': 'AIzaSyAq4CZxYBwQ3Mf3RDJGH6CYUbBU1nonVpI',
+                'language': 'en'
             },
 
             placeOptions: {
@@ -162,6 +163,7 @@ Lava.ClassManager.define(
 
             // Wait until mapManager is fully initialized (callback)
             this.mapManager = new MapManager(self.defaults.mapConfig, (function(){
+                self.mapManager.setTranslator(self.translator);
                 self.fromInput = new google.maps.places.Autocomplete(document.getElementById('input-from'), self.defaults.placeOptions);
                 self.toInput = new google.maps.places.Autocomplete(document.getElementById('input-to'), self.defaults.placeOptions);
                 self.toStep(self.currentStep);
@@ -211,12 +213,12 @@ Lava.ClassManager.define(
                 });
                 $(self.buttons.go.el).on('click', function(){
                     self.validate('go', function(){
-                        self.mapManager.toSegment(++self.route.currentSegment);
+                        self.mapManager.toSegment(self.mapManager.getCurrentSegment() + 1);
                     });
                 });
                 $(self.buttons['go-back'].el).on('click', function(){
                     self.validate('go-back', function(){
-                        self.mapManager.toSegment(--self.route.currentSegment);
+                        self.mapManager.toSegment(self.mapManager.getCurrentSegment() - 1);
                     });
                 });
                 $(self.buttons.reset.el).on('click', function(){
@@ -513,7 +515,7 @@ Lava.ClassManager.define(
         },
 
         validateSegment: function(successCallback){
-            this.route.currentSegment = this.defaults.route.currentSegment;
+            this.mapManager.setCurrentSegment(this.defaults.route.currentSegment);
             if(typeof successCallback === 'function'){
                 successCallback();
             }
