@@ -30,15 +30,15 @@ Lava.ClassManager.define(
             steps:{
                 1: {
                     'id' : 'step-from',
-                    'buttons': ['next']
+                    'buttons': ['reset', 'next']
                 },
                 2: {
                     'id' : 'step-to',
-                    'buttons': ['back', 'next']
+                    'buttons': ['reset', 'back', 'next']
                 },
                 3: {
                     'id' : 'step-routes',
-                    'buttons': ['back']
+                    'buttons': ['reset', 'back']
                 },
                 4: {
                     'id' : 'step-map',
@@ -107,7 +107,7 @@ Lava.ClassManager.define(
                 'validators': {
                     'next': 'validateFrom'
                 },
-                'init': 'initSpeechRecognitionTarget'
+                'init': ['initSpeechRecognitionTarget', 'initAutoLocation']
             },
             2: {
                 'container': null,
@@ -198,11 +198,13 @@ Lava.ClassManager.define(
             // Bind button events
             if(!self.err){
                 $(self.buttons.back.el).on('click', function(){
+                    $(this).prop('disabled', true);
                     self.validate('back', function(){
                         self.toStep(--self.currentStep)
                     });
                 });
                 $(self.buttons.next.el).on('click', function(){
+                    $(this).prop('disabled', true);
                     self.validate('next', function(){
                         self.toStep(++self.currentStep);
                     });
@@ -266,10 +268,10 @@ Lava.ClassManager.define(
             $.each(self.buttons, function(i, button){
                 if(stepButtonSet.indexOf(i) > -1){
                     button.disabled = false;
-                    $(button.el).show();
+                    $(button.el).prop('disabled', false).show();
                 } else {
                     button.disabled = true;
-                    $(button.el).hide();
+                    $(button.el).prop('disabled', true).hide();
                 }
             });
         },
@@ -304,9 +306,16 @@ Lava.ClassManager.define(
             this.speechRecognitionManager.hideControl();
 
             // Call to a step-specific method if such a method specified in the step config
-            if(this._canCall(this.steps[this.currentStep].init)){
-                this[this.steps[this.currentStep].init]();
+            if(typeof this.steps[this.currentStep].init !== 'object' || this.steps[this.currentStep].init.constructor != Array){
+                this.steps[this.currentStep].init = [this.steps[this.currentStep].init];
             }
+
+            var self = this;
+            self.steps[this.currentStep].init.forEach(function(v){
+                if(self._canCall(v)){
+                    self[v]();
+                }
+            });
         },
 
         validate: function(action, successCallback){
@@ -321,6 +330,8 @@ Lava.ClassManager.define(
         error: function(msg, graceful){
             if(!graceful){
                 AppCache.clearAll();
+            } else {
+                this._initStepButtons(this.currentStep);
             }
             // TODO: Nicer way to show errors
             alert(msg);
@@ -360,6 +371,8 @@ Lava.ClassManager.define(
         // Itineraries -----------------------------------------------------------------------
 
         initItineraries: function(){
+            this.route.currentRoute = {};
+
             // Clear container html
             $(this.steps[this.currentStep].container).html('');
 
@@ -449,6 +462,18 @@ Lava.ClassManager.define(
         // Validators -----------------------------------------------------------------------
 
         validateFrom: function(successCallback){
+
+            // Use browser navigator
+            if($('#from-current-location').is(':checked')){
+                var self = this;
+                this.mapManager.getLocation(this.setPlaceFromNavigator, this.error, this, {
+                    type: 'from',
+                    callback: successCallback
+                });
+                return;
+            }
+
+            // Use input / voice input
             var value = $('#input-from').val();
 
             if(!value){
@@ -494,20 +519,41 @@ Lava.ClassManager.define(
             }
         },
 
+        setPlaceFromNavigator: function(position, handler, params){
+            if(handler && typeof params === 'object' && params.type){
+                handler._setPlace(params.type, position, params.callback);
+            } else {
+                handler.error(handler.translator.translate('Failed to fetch location. Please specify address'), true);
+            }
+        },
+
         _setPlace: function(key, place, successCallback){
-            if(place && place.geometry && typeof this.route[key] === 'object'){
-                this.route[key] = {
-                    lat: place.geometry.location.lat(),
-                    lon: place.geometry.location.lng()
-                };
+            if(place && typeof place === 'object' && typeof this.route[key] === 'object'){
 
-                AppCache.persist('route', this.route);
+                // From browser navigator
+                if(typeof place.lat === 'function' && typeof place.lng === 'function'){
+                    this.route[key] = {
+                        lat: place.lat(),
+                        lon: place.lng()
+                    };
 
-                if(typeof successCallback === 'function'){
-                    successCallback();
+                // Google Maps Place object (from address)
+                } else if(place.geometry){
+                    this.route[key] = {
+                        lat: place.geometry.location.lat(),
+                        lon: place.geometry.location.lng()
+                    };
                 }
 
-                return;
+                if(this.route[key].lat && this.route[key].lon){
+                    AppCache.persist('route', this.route);
+
+                    if(typeof successCallback === 'function'){
+                        successCallback();
+                    }
+
+                    return;
+                }
             }
 
             this.error(this.translator.translate('Please specify place'));
@@ -516,6 +562,19 @@ Lava.ClassManager.define(
         //
         //
         // Html handlers ---------------------------------------------------------------
+
+        initAutoLocation: function(){
+            if(navigator.geolocation){
+                $('.field-current-location').show();
+                $('#from-current-location').on('change', function(){
+                    if($(this).is(':checked')){
+                        $('#input-from').prop('disabled', true);
+                    } else {
+                        $('#input-from').prop('disabled', false);
+                    }
+                });
+            }
+        },
 
         _formatRouteTitle: function(data){
             if(typeof data === 'object' && data.startTime && data.endTime && data.duration){

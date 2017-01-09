@@ -187,7 +187,7 @@ Lava.ClassManager.define(
         renderRoute: function(route){
             var self = this,
                 config = {},
-                bounds = new google.maps.LatLngBounds();
+                bounds = this.map.getBounds();
 
             route.forEach(function(v, i){
                 config = JSON.parse(JSON.stringify(typeof self.styles[v.mode] !== 'undefined' ? self.styles[v.mode] : self.styles.DEFAULT));
@@ -201,7 +201,9 @@ Lava.ClassManager.define(
             });
 
             this.map.fitBounds(bounds);
-            this.initLocation(this.fitLocationBounds);
+            if(!this.geolocation){
+                this.initLocation();
+            }
             this.route = route;
             this.handleSegmentNav(-1);
         },
@@ -338,20 +340,22 @@ Lava.ClassManager.define(
         //
         // Location ----------------------------------------------------------------------------
 
-        initLocation: function(callback){
+        initLocation: function(callback, callbackError, handler, params){
             if (navigator.geolocation){
                 var self = this,
-                    shouldCallback = (typeof callback === 'function');
-
-                self.marker.setMap(self.map);
+                    shouldCallback = true;
 
                 self.geolocationInterval = navigator.geolocation.watchPosition(
                     function(position){
                         self.geolocation = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                        self.marker.setMap(self.map);
                         self.marker.setPosition(self.geolocation);
 
                         if(shouldCallback){
-                            callback(self.geolocation, self);
+                            self.fitLocationBounds();
+                            if(typeof callback === 'function'){
+                                callback(self.geolocation, handler, params);
+                            }
                             shouldCallback = false;
                         }
                     },
@@ -365,9 +369,18 @@ Lava.ClassManager.define(
             }
         },
 
+        getLocation: function(callback, callbackError, handler, params){
+            if(this.geolocation){
+                callback(this.geolocation, handler, params);
+                return;
+            }
+
+            this.initLocation(callback, callbackError, handler, params);
+        },
+
         deInitLocation: function(){
             this.marker.setMap(null);
-            this.geolocationInterval = null;
+            navigator.geolocation.clearWatch(this.geolocationInterval);
         },
 
         // Arguments for compatibility with callbacks
