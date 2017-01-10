@@ -11,7 +11,8 @@ head.load([
     "app/scripts/manager.js",
     "app/scripts/map.js",
     "app/scripts/translator.js",
-    "app/scripts/speech_recognition.js"
+    "app/scripts/speech_recognition.js",
+    "app/scripts/speech_synthesis.js"
 ], function() {
     $(document).on('ready', function(){
         var manager = new Manager();

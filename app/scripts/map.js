@@ -73,7 +73,9 @@ Lava.ClassManager.define(
         directionsService: null,
         placeService: null,
         directionsRenderer: null,
+
         translator: null,
+        speechSynthesis: null,
 
         currentSegment: -1,
         currentStep: 0,
@@ -131,14 +133,15 @@ Lava.ClassManager.define(
 
             this.buttonNext = document.getElementById(config.buttonNextId);
             this.buttonBack = document.getElementById(config.buttonBackId);
+            this.directionsPanel = document.getElementById(config.directionsContainerId);
+            this.segmentPanel = document.getElementById(config.segmentContainerId);
 
             this.marker = new google.maps.Marker({
                 icon: this.defaults.location.icon
             });
 
+            this.speechSynthesis = new SpeechSynthesisManager();
             this.placeService = new google.maps.places.PlacesService(this.map);
-            this.directionsPanel = document.getElementById(config.directionsContainerId);
-            this.segmentPanel = document.getElementById(config.segmentContainerId);
             this.directionsService = new google.maps.DirectionsService;
             this.directionsRenderer = new google.maps.DirectionsRenderer({
                 polylineOptions: JSON.parse(JSON.stringify(this.styles.ACTIVE)),
@@ -181,13 +184,21 @@ Lava.ClassManager.define(
         },
 
         error: function(msg){
-            // TODO: Show nicely to the user, possibly implement localization
-            console.log("ERROR: " + msg);
+            // TODO: Nicer way to show errors
+            alert(msg);
         },
 
+        // "Soft" clear. Reset panels and icons state, for example before going to another step
+        deInit: function(){
+            this.deInitSpeechSynthesis();
+            $(this.directionsPanel).text('');
+            $(this.segmentPanel).text('');
+        },
+
+        // "Hard" clear. When resetting all settings
         clear: function(){
+            this.deInit();
             this.directionsRenderer.setMap(null);
-            this.directionsRenderer.setPanel(null);
             if(typeof this.route === 'object'){
                 var self = this;
                 this.route.forEach(function(v){
@@ -211,32 +222,72 @@ Lava.ClassManager.define(
             this.translator = translator;
         },
 
-        renderRoute: function(route){
-            var self = this,
-                config = {},
-                bounds = this.map.getBounds();
-
-            if(!bounds){
-                bounds = new google.maps.LatLngBounds();
-            }
-
-            route.forEach(function(v, i){
-                config = JSON.parse(JSON.stringify(typeof self.styles[v.mode] !== 'undefined' ? self.styles[v.mode] : self.styles.DEFAULT));
-                config.path = google.maps.geometry.encoding.decodePath(v.legGeometry.points);
-                route[i].poly = new google.maps.Polyline(config);
-                route[i].poly.setMap(self.map);
-
-                v.poly.getPath().getArray().forEach(function(v){
-                    bounds.extend(v);
-                });
+        getPlace: function(query, handler, callback){
+            var place = null;
+            this.placeService.textSearch({query: query}, function(results, status){
+                if(status == google.maps.places.PlacesServiceStatus.OK
+                    && typeof results === 'object' && typeof results[0] === 'object'){
+                    place = results[0];
+                }
+                callback(place, handler);
             });
+        },
 
-            this.map.fitBounds(bounds);
-            if(!this.geolocation){
-                this.initLocation();
+        initSpeechSynthesis: function(){
+            if(this.speechSynthesis){
+                this.speechSynthesis.showControl();
             }
-            this.route = route;
-            this.handleSegmentNav(-1);
+        },
+
+        deInitSpeechSynthesis: function(){
+            if(this.speechSynthesis){
+                this.speechSynthesis.hideControl();
+            }
+        },
+
+        //
+        //
+        // Navigation --------------------------------------------------------------------------
+
+        startNavigation: function(handler){
+            if(!handler && typeof this.startNavigation === 'function'){
+                handler = this;
+            }
+
+            handler.navigationInterval = setInterval(function(){
+                var distance = google.maps.geometry.spherical.computeDistanceBetween(
+                    handler.route[handler.currentSegment].steps[handler.currentStep].end_point,
+                    handler.geolocation
+                );
+
+                if(distance < handler.defaults.navigation.switchStep){
+                    handler.toStep(handler.currentStep + 1, null, parseInt(distance));
+                }
+
+            }, handler.defaults.navigation.timeout);
+        },
+
+        toStep: function(index, handler, distance){
+            if(!handler && typeof this.toStep === 'function'){
+                handler = this;
+            }
+
+            handler.currentStep = index;
+
+            try{
+                $(handler.directionsPanel).text(
+                    (distance && typeof handler.translator === 'object' ? handler.translator.translate('In %1 meters ', [distance]) : '') +
+                    handler.route[handler.currentSegment].steps[index].instructions.replace(/(<([^>]+)>)/ig, '')
+                );
+
+                if(handler.speechSynthesis && $(handler.directionsPanel).text()){
+                    handler.speechSynthesis.speak($(handler.directionsPanel).text());
+                }
+
+            } catch(e){
+                $(handler.directionsPanel).text('');
+                clearInterval(handler.navigationInterval);
+            }
         },
 
         renderDirections: function(from, to, waypoints){
@@ -266,53 +317,6 @@ Lava.ClassManager.define(
             });
         },
 
-        toStep: function(index, handler, distance){
-            if(!handler && typeof this.toStep === 'function'){
-                handler = this;
-            }
-
-            handler.currentStep = index;
-
-            try{
-                $(handler.directionsPanel).text(
-                    (distance && typeof handler.translator === 'object' ? handler.translator.translate('In %1 meters ', [distance]) : '') +
-                    handler.route[handler.currentSegment].steps[index].instructions.replace(/(<([^>]+)>)/ig, '')
-                );
-            } catch(e){
-                $(handler.directionsPanel).text('');
-                clearInterval(handler.navigationInterval);
-            }
-        },
-
-        startNavigation: function(handler){
-            if(!handler && typeof this.startNavigation === 'function'){
-                handler = this;
-            }
-
-            handler.navigationInterval = setInterval(function(){
-                var distance = google.maps.geometry.spherical.computeDistanceBetween(
-                    handler.route[handler.currentSegment].steps[handler.currentStep].end_point,
-                    handler.geolocation
-                );
-
-                if(distance < handler.defaults.navigation.switchStep){
-                    handler.toStep(handler.currentStep + 1, null, parseInt(distance));
-                }
-
-            }, handler.defaults.navigation.timeout);
-        },
-
-        getPlace: function(query, handler, callback){
-            var place = null;
-            this.placeService.textSearch({query: query}, function(results, status){
-                if(status == google.maps.places.PlacesServiceStatus.OK
-                    && typeof results === 'object' && typeof results[0] === 'object'){
-                    place = results[0];
-                }
-                callback(place, handler);
-            });
-        },
-
         //
         //
         // Segment transitions ------------------------------------------------------------------
@@ -322,7 +326,6 @@ Lava.ClassManager.define(
             clearInterval(this.navigationInterval);
 
             this.directionsRenderer.setMap(null);
-            this.directionsRenderer.setPanel(null);
 
             this.handleSegmentNav(index);
             this._updatePanel();
@@ -360,6 +363,36 @@ Lava.ClassManager.define(
             } else {
                 this.error('Invalid route data');
             }
+        },
+
+        renderRoute: function(route){
+            var self = this,
+                config = {},
+                bounds = this.map.getBounds();
+
+            if(!bounds){
+                bounds = new google.maps.LatLngBounds();
+            }
+
+            self.currentSegment = -1;
+
+            route.forEach(function(v, i){
+                config = JSON.parse(JSON.stringify(typeof self.styles[v.mode] !== 'undefined' ? self.styles[v.mode] : self.styles.DEFAULT));
+                config.path = google.maps.geometry.encoding.decodePath(v.legGeometry.points);
+                route[i].poly = new google.maps.Polyline(config);
+                route[i].poly.setMap(self.map);
+
+                v.poly.getPath().getArray().forEach(function(v){
+                    bounds.extend(v);
+                });
+            });
+
+            this.map.fitBounds(bounds);
+            this.route = route;
+            if(!this.geolocation){
+                this.initLocation();
+            }
+            this.handleSegmentNav(self.currentSegment);
         },
 
         _updatePanel: function(){
@@ -402,6 +435,10 @@ Lava.ClassManager.define(
                     }
                 } else if(this.currentSegment == this.route.length){
                     $(this.segmentPanel).text(this.translator.translate('Destination'));
+                }
+
+                if(this.speechSynthesis && $(this.segmentPanel).text()){
+                    this.speechSynthesis.speak($(this.segmentPanel).text());
                 }
 
             } catch(e){

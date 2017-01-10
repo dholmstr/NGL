@@ -359,6 +359,7 @@ Lava.ClassManager.define(
         initMapRoute: function(){
             // Have to re-init map, because it might not be initialized correctly in the hidden section
             this.mapManager.initMap();
+            this.mapManager.initSpeechSynthesis();
 
             if(typeof this.route !== 'object' || !this.route.from || !this.route.to){
                 this.error(this.translator.translate('Cannot render itinerary'));
@@ -515,6 +516,7 @@ Lava.ClassManager.define(
         },
 
         validateSegment: function(successCallback){
+            this.mapManager.deInit();
             this.mapManager.setCurrentSegment(this.defaults.route.currentSegment);
             if(typeof successCallback === 'function'){
                 successCallback();

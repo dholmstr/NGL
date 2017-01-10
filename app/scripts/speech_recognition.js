@@ -41,7 +41,7 @@ Lava.ClassManager.define(
         },
 
         _initControls: function(){
-            this.control = $('#sound-button').first();
+            this.control = $('#button-speech-recognition').first();
             if(this.control.length == 0){
                 return false;
             }

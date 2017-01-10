@@ -23,18 +23,5 @@ head.load([
                 + 'px'
             });
         }
-
-        /*
-        var soundInput = $('#sound-input').first();
-        $('#sound-button').on('click', function(){
-            if($(this).hasClass('active')){
-                $(this).removeClass('active');
-                $(soundInput).val(0);
-            } else {
-                $(this).addClass('active');
-                $(soundInput).val(1);
-            }
-        });
-        */
     });
 });

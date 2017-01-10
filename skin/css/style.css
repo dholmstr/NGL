@@ -125,6 +125,8 @@ header .sound-control-wrap{
     box-shadow: none;
     font-size: 22px;
     color: #cfd2da;
+    position: relative;
+    float:right;
 }
 
 .sound-button:hover, .sound-button:active, .sound-button:focus{
@@ -132,9 +134,18 @@ header .sound-control-wrap{
     cursor: pointer;
 }
 
-.sound-button:before{
+.sound-button:before, .sound-button:after{
     display: inline-block;
+    line-height:30px;
     font-family: 'FontAwesome';
+    float:left;
+}
+
+.sound-button:after{
+    font-size:0.5em;
+}
+
+.sound-button:before{
     content: "\f026";
 }
 
@@ -148,6 +159,14 @@ header .sound-control-wrap{
 
 .sound-button.in.active:before{
     content: "\f130";
+}
+
+#button-speech-synthesis:after{
+    content: "\f00d";
+}
+
+#button-speech-synthesis.active:after{
+    content: '';
 }
 
 /*
